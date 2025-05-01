@@ -1,8 +1,7 @@
-## Devloped by: Sreevalsan V
-## Register Number: 212223240158
-## Date: 5-03-2025
 
-# Ex.No: 6                   HOLT WINTERS METHOD
+## Date: 15-04-2025
+
+# Ex.No: 6     HOLT WINTERS METHOD
 
 ### AIM:
 To implement the Holt Winters Method Model using Python.
@@ -16,115 +15,107 @@ To implement the Holt Winters Method Model using Python.
 6. Create teh final model and predict future data and plot it
 
 ### PROGRAM:
-
-Importing necessary modules
-
-```py
+###  NAME : ARCHANA T   
+### REGISTER NUMBER :212223240013
+```
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-```
-
-Load the dataset,perform data exploration
-```py
-data = pd.read_csv('/content/AirPassengers.csv', parse_dates=['Month'],index_col='Month')
-
-data.head()
-```
-
-Resample and plot data
-
-```py
-data_monthly = data.resample('MS').sum()   #Month start
-
-data_monthly.head()
-
-data_monthly.plot()
-```
-
-Scale the data and check for seasonality
-
-```py
-scaler = MinMaxScaler()
-scaled_data = pd.Series(scaler.fit_transform(data_monthly.values.reshape(-1, 1)).flatten(),index=data_monthly.index)
-
-scaled_data.plot() # The data seems to have additive trend and multiplicative seasonality
-
+from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.seasonal import seasonal_decompose
-decomposition = seasonal_decompose(data_monthly, model="additive")
+
+# Load the dataset
+data = pd.read_csv('Sunspots.csv')
+
+# Rename columns if necessary
+data.columns = [col.strip().capitalize() for col in data.columns]  # Ensure consistency
+print(data.columns)  # Check the actual column names
+
+# Convert 'Date' to datetime and set as index
+data['Date'] = pd.to_datetime(data['Date'])
+data.set_index('Date', inplace=True)
+
+# Select the first 100 rows of the 'Monthly mean total sunspot number' column
+sunspot_data = data[['Monthly mean total sunspot number']].head(100)
+
+
+
+# Resample monthly (should already be monthly, but ensures consistency)
+data_monthly = sunspot_data.resample('MS').sum()
+
+
+# Plot original sunspot data
+data_monthly.plot(title="Monthly Sunspot Counts", ylabel="Sunspots")
+plt.show()
+
+# Normalize using MinMaxScaler
+scaler = MinMaxScaler()
+scaled_data = pd.Series(
+    scaler.fit_transform(data_monthly.values.reshape(-1, 1)).flatten(),
+    index=data_monthly.index
+)
+
+# Plot scaled data
+scaled_data.plot(title="Scaled Monthly Sunspot Counts")
+plt.show()
+
+# Decompose original time series
+decomposition = seasonal_decompose(data_monthly, model="additive", period=12)
 decomposition.plot()
 plt.show()
-```
 
-Split test,train data,create a model using Holt-Winters method, train with train data and Evaluate the model predictions against test data
+# Offset scaled data to avoid 0s (for multiplicative seasonality)
+scaled_data += 1
 
-```py
-scaled_data=scaled_data+1 # multiplicative seasonality cant handle non postive values, yes even zeros
+# Train-test split (80/20)
 train_data = scaled_data[:int(len(scaled_data) * 0.8)]
 test_data = scaled_data[int(len(scaled_data) * 0.8):]
 
-model_add = ExponentialSmoothing(train_data, trend='add', seasonal='mul').fit()
-
+# Fit Holt-Winters model
+model_add = ExponentialSmoothing(train_data, trend='add', seasonal='mul', seasonal_periods=12).fit()
 test_predictions_add = model_add.forecast(steps=len(test_data))
 
-ax=train_data.plot()
-test_predictions_add.plot(ax=ax)
-test_data.plot(ax=ax)
-ax.legend(["train_data", "test_predictions_add","test_data"])
-ax.set_title('Visual evaluation')
+# Plot predictions vs test
+ax = train_data.plot(label="Train")
+test_predictions_add.plot(ax=ax, label="Predictions")
+test_data.plot(ax=ax, label="Test")
+ax.legend()
+ax.set_title("Sunspot Forecast: Train vs Test")
+plt.show()
 
-np.sqrt(mean_squared_error(test_data, test_predictions_add))
+# Evaluation
+rmse = np.sqrt(mean_squared_error(test_data, test_predictions_add))
+print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+print("Scaled Data: Std Dev =", np.sqrt(scaled_data.var()), "Mean =", scaled_data.mean())
+final_model = ExponentialSmoothing(data_monthly, trend='add', seasonal='add', seasonal_periods=12).fit()
 
-np.sqrt(scaled_data.var()),scaled_data.mean()
+forecast_horizon = int(len(data_monthly) / 4)
+final_predictions = final_model.forecast(steps=forecast_horizon)
 
-```
+# Final plot
+ax = data_monthly.plot(label="Observed")![image](https://github.com/user-attachments/assets/3d083557-2fd0-4753-a462-2d885e796a6c)
 
-Create teh final model and predict future data and plot it
-
-```py
-
-final_model = ExponentialSmoothing(data_monthly, trend='add', seasonal='mul', seasonal_periods=12).fit()
-
-final_predictions = final_model.forecast(steps=int(len(data_monthly)/4)) #for next year
-
-ax=data_monthly.plot()
-final_predictions.plot(ax=ax)
-ax.legend(["data_monthly", "final_predictions"])
-ax.set_xlabel('Number of monthly passengers')
-ax.set_ylabel('Months')
-ax.set_title('Prediction')
+ax.set_title("Future Sunspot Forecast")
+ax.set_xlabel("Date")
+ax.set_ylabel("Sunspots")
+plt.show()
 
 ```
+
 
 ### OUTPUT:
- 
- Scaled_data plot:
+ ![image](https://github.com/user-attachments/assets/18705dce-4add-4e09-b703-00ec8630f373)
+![image](https://github.com/user-attachments/assets/3a9220ab-b977-40ea-8dc2-2db7145c1429)
 
- ![alt text](image.png)
+![image](https://github.com/user-attachments/assets/9634d059-09c4-46b4-8098-8a10e8b1dd55)
 
-Decomposed plot:
+![image](https://github.com/user-attachments/assets/e0266f52-7437-4306-8083-c2d996232b87)
 
-![alt text](image-1.png)
+![image](https://github.com/user-attachments/assets/4ce54efd-bcff-4b01-8f4a-5fc0a5f6c555)
 
-Test prediction:
 
-![alt text](image-2.png)
-
-Model performance metrics:
-
-RMSE:
-
-![alt text](image-4.png)
-
-Standard deviation and mean:
-
-![alt text](image-5.png)
-
-Final prediction:
-
-![alt text](image-3.png)
 
 ### RESULT:
 Thus the program run successfully based on the Holt Winters Method model.
